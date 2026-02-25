@@ -369,11 +369,11 @@ function Juego({ codigo, jugador, salaInicial, modoCPU, dificultad }: {
     score2: 0,
     ball_x: 50,
     ball_y: 50,
-    ball_vx: SPEED_INIT * config.speedMultiplier,
+    ball_vx: SPEED_INIT * config.speedMultiplier * 0.3 * (Math.random() > 0.5 ? 1 : -1),
     ball_vy: SPEED_INIT * config.speedMultiplier * (Math.random() > 0.5 ? 1 : -1),
     paddle1_y: 50,
     paddle2_y: 50,
-    paddle1_x: 50, // Para modo vertical
+    paddle1_x: 50,
     paddle2_x: 50,
   };
 
@@ -416,7 +416,7 @@ function Juego({ codigo, jugador, salaInicial, modoCPU, dificultad }: {
       let { ball_x, ball_y, ball_vx, ball_vy, paddle1_y, paddle2_y, paddle1_x, paddle2_x, score1, score2 } = s;
 
       if (modoCPU) {
-        // Modo vertical: pelota se mueve en Y principalmente
+        // Modo vertical: pelota se mueve verticalmente, paletas horizontales arriba/abajo
         ball_y += ball_vy;
         ball_x += ball_vx * 0.3; // Movimiento horizontal más lento
 
@@ -618,7 +618,7 @@ function Juego({ codigo, jugador, salaInicial, modoCPU, dificultad }: {
             <div style={styles.mesaAzul} />
             <div style={lineaHorizontal(50)} />
 
-            {/* Paleta CPU (arriba) */}
+            {/* Paleta CPU (arriba) - horizontal */}
             <div style={{
               position: 'absolute',
               left: `${(paddle2_x || 50) - PADDLE_W_VERTICAL / 2}%`,
@@ -642,7 +642,7 @@ function Juego({ codigo, jugador, salaInicial, modoCPU, dificultad }: {
               whiteSpace: 'nowrap',
             }}>CPU</div>
 
-            {/* Paleta Jugador (abajo) */}
+            {/* Paleta Jugador (abajo) - horizontal */}
             <div style={{
               position: 'absolute',
               left: `${(paddle1_x || 50) - PADDLE_W_VERTICAL / 2}%`,
