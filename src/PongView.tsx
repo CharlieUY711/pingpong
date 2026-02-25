@@ -29,8 +29,8 @@ const WIN_SCORE = 7;
 const TICK_MS = 30; // solo el host corre la física
 
 // Constantes para modo CPU vertical
-const PADDLE_H_VERTICAL = 12; // paleta más ancha en modo vertical
-const PADDLE_W_VERTICAL = 3.5;
+const PADDLE_H_VERTICAL = 3.5; // altura de la paleta (vertical)
+const PADDLE_W_VERTICAL = 12; // ancho de la paleta (horizontal)
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 type DificultadCPU = 'facil' | 'normal' | 'dificil';
