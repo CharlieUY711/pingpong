@@ -524,7 +524,7 @@ function Preparacion({
 }: any) {
   const barcosColocados = jugador.grilla.barcos.length;
   const todosColocados = barcosColocados === BARCOS.length;
-  const oponente = Object.values(estado.jugadores).find((j: any) => j.nombre !== nombre);
+  const oponente = (Object.values(estado.jugadores) as Array<{ nombre: string; grilla: Grilla; listo: boolean }>).find(j => j.nombre !== nombre);
 
   return (
     <div style={styles.fullPage}>
@@ -552,7 +552,7 @@ function Preparacion({
           {/* Selector de barcos */}
           <div style={styles.barcosSelector}>
             {BARCOS.map(([nombreBarco, tamaño], idx) => {
-              const yaColocado = jugador.grilla.barcos.some(b => b.id === idx);
+              const yaColocado = jugador.grilla.barcos.some((b: Barco) => b.id === idx);
               return (
                 <button
                   key={idx}

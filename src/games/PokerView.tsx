@@ -617,10 +617,10 @@ function MesaPoker({ codigo, nombre, sala, esHost, onActualizarSala }: {
             for (let l = k + 1; l < todasLasCartas.length; l++) {
               for (let m = l + 1; m < todasLasCartas.length; m++) {
                 const combinacion = [todasLasCartas[i], todasLasCartas[j], todasLasCartas[k], todasLasCartas[l], todasLasCartas[m]];
-                const eval = evaluarMano(combinacion);
-                if (eval.valor > mejorEval.valor || (eval.valor === mejorEval.valor && compararManos(combinacion, mejorMano) > 0)) {
+                const evaluacion = evaluarMano(combinacion);
+                if (evaluacion.valor > mejorEval.valor || (evaluacion.valor === mejorEval.valor && compararManos(combinacion, mejorMano) > 0)) {
                   mejorMano = combinacion;
-                  mejorEval = eval;
+                  mejorEval = evaluacion;
                 }
               }
             }

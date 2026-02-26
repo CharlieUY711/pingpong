@@ -135,7 +135,7 @@ function App() {
       {/* Efectos de partículas flotantes */}
       <div style={styles.particles}>
         {Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} style={styles.particle(i)} />
+          <div key={i} style={getParticleStyle(i)} />
         ))}
       </div>
     </div>
@@ -297,19 +297,21 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none',
     zIndex: 1,
   },
-  particle: (index: number): React.CSSProperties => ({
-    position: 'absolute',
-    width: '4px',
-    height: '4px',
-    background: '#4ECDC4',
-    borderRadius: '50%',
-    left: `${(index * 5) % 100}%`,
-    top: `${(index * 7) % 100}%`,
-    boxShadow: '0 0 6px #4ECDC4',
-    animation: `float ${3 + (index % 3)}s ease-in-out infinite`,
-    animationDelay: `${index * 0.2}s`,
-  }),
 };
+
+// Función helper para generar estilos de partícula
+const getParticleStyle = (index: number): React.CSSProperties => ({
+  position: 'absolute',
+  width: '4px',
+  height: '4px',
+  background: '#4ECDC4',
+  borderRadius: '50%',
+  left: `${(index * 5) % 100}%`,
+  top: `${(index * 7) % 100}%`,
+  boxShadow: '0 0 6px #4ECDC4',
+  animation: `float ${3 + (index % 3)}s ease-in-out infinite`,
+  animationDelay: `${index * 0.2}s`,
+});
 
 // Agregar estilos de animación al documento
 if (typeof document !== 'undefined') {

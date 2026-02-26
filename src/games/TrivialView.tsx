@@ -693,7 +693,7 @@ function SeleccionEquipo({ sala, jugadorId, onUnirseEquipo, onCreateEquipo }: {
 function SalaEspera({ sala, jugadorId, onIniciar, onSalir }: {
   sala: Sala;
   jugadorId: string;
-  onIniciar: () => void;
+  onIniciar?: () => void;
   onSalir: () => void;
 }) {
   const jugador = sala.estado.jugadores.find(j => j.id === jugadorId);
@@ -735,7 +735,7 @@ function SalaEspera({ sala, jugadorId, onIniciar, onSalir }: {
         ))}
       </div>
 
-      {puedeIniciar && (
+      {puedeIniciar && onIniciar && (
         <button onClick={onIniciar} style={{ ...styles.button, ...styles.buttonPrimary }}>
           Iniciar Partida
         </button>

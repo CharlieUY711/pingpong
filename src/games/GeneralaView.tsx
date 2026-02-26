@@ -463,7 +463,7 @@ export default function GeneralaView() {
   const [error, setError] = useState('');
   const [sala, setSala] = useState<Sala | null>(null);
   const [jugadorId, setJugadorId] = useState<string>('');
-  const channelRef = useRef<ReturnType<typeof (window as any).supabase?.channel> | null>(null);
+  const channelRef = useRef<any>(null);
   const [animando, setAnimando] = useState(false);
 
   // Inicializar Supabase client

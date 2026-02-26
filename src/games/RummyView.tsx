@@ -791,10 +791,10 @@ function Juego({ codigo, nombre, sala, miPosicion, onActualizarSala }: {
               key={pos}
               style={{
                 ...styles.posicionJugador,
-                ...(pos === 1 ? styles.posicionTop) : {},
-                ...(pos === 2 ? styles.posicionRight) : {},
-                ...(pos === 3 ? styles.posicionBottom) : {},
-                ...(pos === 4 ? styles.posicionLeft) : {},
+                ...(pos === 1 ? styles.posicionTop : {}),
+                ...(pos === 2 ? styles.posicionRight : {}),
+                ...(pos === 3 ? styles.posicionBottom : {}),
+                ...(pos === 4 ? styles.posicionLeft : {}),
                 ...(esAliado ? styles.posicionAliado : {}),
                 ...(esSuTurno ? styles.posicionTurno : {}),
               }}

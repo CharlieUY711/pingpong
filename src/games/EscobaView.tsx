@@ -506,7 +506,7 @@ function SalaEspera({ codigo, nombre, sala, esHost }: {
               <span style={{ fontWeight: jug.nombre === nombre ? 700 : 400 }}>
                 {jug.nombre} {jug.nombre === nombre && '(Tú)'}
               </span>
-              {jug.nombre === estado.host && <span style={{ color: '#FF6B35' }}>👑</span>}
+              {jug.nombre === sala.host && <span style={{ color: '#FF6B35' }}>👑</span>}
             </div>
           ))}
         </div>

@@ -62,7 +62,7 @@ function genCode() {
 
 function getColor(num: number): 'rojo' | 'negro' | 'verde' {
   const item = NUMEROS_RULETA.find(n => n.num === num);
-  return item ? item.color : 'verde';
+  return item ? (item.color as 'rojo' | 'negro' | 'verde') : 'verde';
 }
 
 function esPar(num: number): boolean {
