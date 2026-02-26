@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import PongView from './PongView'
 import RuletaView from './games/RuletaView'
+import RummyView from './games/RummyView'
+import BatallaNavalView from './games/BatallaNavalView'
 
-type Vista = 'menu' | 'pong' | 'ruleta'
+type Vista = 'menu' | 'pong' | 'ruleta' | 'rummy' | 'batallaNaval'
 
 function App() {
   const [vista, setVista] = useState<Vista>('menu')
 
   if (vista === 'pong') return <PongView />
   if (vista === 'ruleta') return <RuletaView />
+  if (vista === 'batallaNaval') return <BatallaNavalView />
+  if (vista === 'rummy') return <RummyView />
 
   return (
     <div style={menuStyles.container}>
@@ -26,6 +30,18 @@ function App() {
           <div style={menuStyles.cardIcon}>🎰</div>
           <div style={menuStyles.cardTitle}>Ruleta</div>
           <div style={menuStyles.cardSubtitle}>Casino multijugador</div>
+        </div>
+
+        <div style={menuStyles.card} onClick={() => setVista('rummy')}>
+          <div style={menuStyles.cardIcon}>🃏</div>
+          <div style={menuStyles.cardTitle}>Rummy Canasta</div>
+          <div style={menuStyles.cardSubtitle}>4 jugadores en parejas</div>
+        </div>
+
+        <div style={menuStyles.card} onClick={() => setVista('batallaNaval')}>
+          <div style={menuStyles.cardIcon}>⚓</div>
+          <div style={menuStyles.cardTitle}>Batalla Naval</div>
+          <div style={menuStyles.cardSubtitle}>Estrategia multijugador</div>
         </div>
       </div>
     </div>
