@@ -1,12 +1,9 @@
 import { useState } from 'react'
 import PongView from './PongView'
 import RuletaView from './games/RuletaView'
-import RummyView from './games/RummyView'
-import BatallaNavalView from './games/BatallaNavalView'
-import BlackJackView from './games/BlackJackView'
-import PokerView from './games/PokerView'
+import EscobaView from './games/EscobaView'
 
-type Vista = 'menu' | 'pong' | 'ruleta' | 'rummy' | 'batallaNaval' | 'blackjack' | 'poker'
+type Vista = 'menu' | 'pong' | 'ruleta' | 'escoba'
 
 function App() {
   const [vista, setVista] = useState<Vista>('menu')
@@ -14,11 +11,6 @@ function App() {
   if (vista === 'pong') return <PongView />
   if (vista === 'ruleta') return <RuletaView />
   if (vista === 'escoba') return <EscobaView />
-  if (vista === 'domino') return <DominoView />
-  if (vista === 'batallaNaval') return <BatallaNavalView />
-  if (vista === 'rummy') return <RummyView />
-  if (vista === 'blackjack') return <BlackJackView />
-  if (vista === 'poker') return <PokerView />
 
   return (
     <div style={menuStyles.container}>
@@ -38,28 +30,10 @@ function App() {
           <div style={menuStyles.cardSubtitle}>Casino multijugador</div>
         </div>
 
-        <div style={menuStyles.card} onClick={() => setVista('rummy')}>
+        <div style={menuStyles.card} onClick={() => setVista('escoba')}>
           <div style={menuStyles.cardIcon}>🃏</div>
-          <div style={menuStyles.cardTitle}>Rummy Canasta</div>
-          <div style={menuStyles.cardSubtitle}>4 jugadores en parejas</div>
-        </div>
-
-        <div style={menuStyles.card} onClick={() => setVista('batallaNaval')}>
-          <div style={menuStyles.cardIcon}>⚓</div>
-          <div style={menuStyles.cardTitle}>Batalla Naval</div>
-          <div style={menuStyles.cardSubtitle}>Estrategia multijugador</div>
-        </div>
-
-        <div style={menuStyles.card} onClick={() => setVista('blackjack')}>
-          <div style={menuStyles.cardIcon}>🃏</div>
-          <div style={menuStyles.cardTitle}>Blackjack</div>
-          <div style={menuStyles.cardSubtitle}>1-4 jugadores, host es banca</div>
-        </div>
-
-        <div style={menuStyles.card} onClick={() => setVista('poker')}>
-          <div style={menuStyles.cardIcon}>🂮</div>
-          <div style={menuStyles.cardTitle}>Poker</div>
-          <div style={menuStyles.cardSubtitle}>Texas Hold'em 2-4 jugadores</div>
+          <div style={menuStyles.cardTitle}>Escoba del 15</div>
+          <div style={menuStyles.cardSubtitle}>Juego de cartas multijugador</div>
         </div>
       </div>
     </div>
