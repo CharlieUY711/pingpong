@@ -345,6 +345,7 @@ export function PokerView({ onBack }: { onBack?: () => void }) {
         sala={sala}
         esHost={esHost}
         onActualizarSala={setSala}
+        onBack={onBack}
       />
     );
   }
@@ -397,12 +398,13 @@ function Lobby({ nombre, setNombre, codigoInput, setCodigoInput, error, setError
 }
 
 // ─── Mesa de Poker ───────────────────────────────────────────────────────────
-function MesaPoker({ codigo, nombre, sala, esHost, onActualizarSala }: {
+function MesaPoker({ codigo, nombre, sala, esHost, onActualizarSala, onBack }: {
   codigo: string;
   nombre: string;
   sala: Sala;
   esHost: boolean;
   onActualizarSala: (s: Sala) => void;
+  onBack?: () => void;
 }) {
   const estado = sala.estado_json;
   const jugador = estado.jugadores[nombre];
@@ -684,6 +686,7 @@ function MesaPoker({ codigo, nombre, sala, esHost, onActualizarSala }: {
   return (
     <div style={styles.fullPage}>
       <div style={styles.casinoBg} />
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
       
       <div style={styles.mesaContainer}>
         {/* Header */}

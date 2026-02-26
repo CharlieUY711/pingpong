@@ -364,6 +364,7 @@ export function RummyView({ onBack }: { onBack?: () => void }) {
         esHost={esHost}
         onIniciar={handleIniciar}
         error={error}
+        onBack={onBack}
       />
     );
   }
@@ -376,15 +377,26 @@ export function RummyView({ onBack }: { onBack?: () => void }) {
         sala={sala}
         miPosicion={miPosicion}
         onActualizarSala={setSala}
+        onBack={onBack}
       />
     );
   }
 
   if (!codigo) {
-    return <div style={styles.fullPage}>Cargando rummy...</div>;
+    return (
+      <div style={styles.fullPage}>
+        {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
+        <div>Cargando rummy...</div>
+      </div>
+    );
   }
 
-  return <div style={styles.fullPage}>Cargando...</div>;
+  return (
+    <div style={styles.fullPage}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
+      <div>Cargando...</div>
+    </div>
+  );
 }
 
 // ─── Lobby ───────────────────────────────────────────────────────────────────
@@ -427,13 +439,14 @@ function Lobby({ nombre, setNombre, codigoInput, setCodigoInput, error, setError
 }
 
 // ─── Sala de Espera ─────────────────────────────────────────────────────────
-function SalaEspera({ codigo, nombre, sala, esHost, onIniciar, error }: {
+function SalaEspera({ codigo, nombre, sala, esHost, onIniciar, error, onBack }: {
   codigo: string;
   nombre: string;
   sala: Sala;
   esHost: boolean;
   onIniciar: () => void;
   error: string;
+  onBack?: () => void;
 }) {
   const estado = sala.estado_json;
   const parejas = [
@@ -443,6 +456,7 @@ function SalaEspera({ codigo, nombre, sala, esHost, onIniciar, error }: {
 
   return (
     <div style={styles.fullPage}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
       <div style={styles.salaCard}>
         <div style={styles.title}>Sala: {codigo}</div>
         <div style={styles.subtitle}>Esperando jugadores (4/4)</div>
@@ -488,12 +502,13 @@ function SalaEspera({ codigo, nombre, sala, esHost, onIniciar, error }: {
 }
 
 // ─── Juego ──────────────────────────────────────────────────────────────────
-function Juego({ codigo, nombre, sala, miPosicion, onActualizarSala }: {
+function Juego({ codigo, nombre, sala, miPosicion, onActualizarSala, onBack }: {
   codigo: string;
   nombre: string;
   sala: Sala;
   miPosicion: 1 | 2 | 3 | 4;
   onActualizarSala: (s: Sala) => void;
+  onBack?: () => void;
 }) {
   const [estado, setEstado] = useState<EstadoJuego>(sala.estado_json);
   const [cartaSeleccionada, setCartaSeleccionada] = useState<Carta | null>(null);
@@ -753,10 +768,18 @@ function Juego({ codigo, nombre, sala, miPosicion, onActualizarSala }: {
     setEstado(nuevoEstado);
   };
 
-  if (!miJugador) return <div style={styles.fullPage}>Cargando...</div>;
+  if (!miJugador) {
+    return (
+      <div style={styles.fullPage}>
+        {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
+        <div>Cargando...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.juegoContainer}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
       {/* Header con puntajes */}
       <div style={styles.header}>
         <div style={styles.puntajeBox}>
@@ -1034,6 +1057,20 @@ function CartaComponent({ carta, size, seleccionada, onClick }: {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles: Record<string, React.CSSProperties> = {
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    background: '#111',
+    border: '1px solid #333',
+    borderRadius: 8,
+    padding: '8px 16px',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    zIndex: 1000,
+  },
   fullPage: {
     position: 'relative',
     width: '100%',

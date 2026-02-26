@@ -238,15 +238,26 @@ export function DominoView({ onBack }: { onBack?: () => void }) {
         sala={sala}
         esHost={esHost}
         onActualizarSala={setSala}
+        onBack={onBack}
       />
     );
   }
 
   if (!codigo) {
-    return <div style={styles.fullPage}>Cargando dominó...</div>;
+    return (
+      <div style={styles.fullPage}>
+        {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
+        <div>Cargando dominó...</div>
+      </div>
+    );
   }
 
-  return <div style={styles.fullPage}>Cargando...</div>;
+  return (
+    <div style={styles.fullPage}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
+      <div>Cargando...</div>
+    </div>
+  );
 }
 
 // ─── Lobby (ya no se usa, pero se mantiene por compatibilidad) ───────────────────────────────────────────────────────────────────
@@ -289,12 +300,13 @@ function Lobby({ nombre, setNombre, codigoInput, setCodigoInput, error, setError
 }
 
 // ─── Sala de Juego ────────────────────────────────────────────────────────────
-function SalaJuego({ codigo, nombre, sala, esHost, onActualizarSala }: {
+function SalaJuego({ codigo, nombre, sala, esHost, onActualizarSala, onBack }: {
   codigo: string;
   nombre: string;
   sala: Sala;
   esHost: boolean;
   onActualizarSala: (s: Sala) => void;
+  onBack?: () => void;
 }) {
   const estado = sala.estado_json;
   const jugador = estado.jugadores[nombre];
@@ -574,6 +586,7 @@ function SalaJuego({ codigo, nombre, sala, esHost, onActualizarSala }: {
       <ConfigSala
         codigo={codigo}
         onConfigurar={handleConfigurar}
+        onBack={onBack}
       />
     );
   }
@@ -586,6 +599,7 @@ function SalaJuego({ codigo, nombre, sala, esHost, onActualizarSala }: {
         sala={sala}
         esHost={esHost}
         onIniciar={handleIniciar}
+        onBack={onBack}
       />
     );
   }
@@ -595,6 +609,7 @@ function SalaJuego({ codigo, nombre, sala, esHost, onActualizarSala }: {
       <PartidoTerminado
         ganador={estado.ganadorPartido || ''}
         puntajes={estado.puntajes}
+        onBack={onBack}
       />
     );
   }
@@ -607,6 +622,7 @@ function SalaJuego({ codigo, nombre, sala, esHost, onActualizarSala }: {
         config={estado.config!}
         esHost={esHost}
         onNuevaRonda={handleNuevaRonda}
+        onBack={onBack}
       />
     );
   }
@@ -630,20 +646,27 @@ function SalaJuego({ codigo, nombre, sala, esHost, onActualizarSala }: {
         onColocarFicha={handleColocarFicha}
         onRobar={handleRobar}
         onPasar={handlePasar}
+        onBack={onBack}
       />
     );
   }
 
-  return <div style={styles.fullPage}>Cargando...</div>;
+  return (
+    <div style={styles.fullPage}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
+      <div>Cargando...</div>
+    </div>
+  );
 }
 
 // ─── Config Sala ─────────────────────────────────────────────────────────────
-function ConfigSala({ codigo, onConfigurar }: { codigo: string; onConfigurar: (jugadores: 2 | 4, puntos: 100 | 200 | 300) => void }) {
+function ConfigSala({ codigo, onConfigurar, onBack }: { codigo: string; onConfigurar: (jugadores: 2 | 4, puntos: 100 | 200 | 300) => void; onBack?: () => void }) {
   const [jugadores, setJugadores] = useState<2 | 4>(2);
   const [puntos, setPuntos] = useState<100 | 200 | 300>(100);
 
   return (
     <div style={styles.fullPage}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
       <div style={styles.configCard}>
         <div style={styles.title}>⚙️ Configurar Sala</div>
         <div style={styles.codigoDisplay}>Código: {codigo}</div>
@@ -702,12 +725,13 @@ function ConfigSala({ codigo, onConfigurar }: { codigo: string; onConfigurar: (j
 }
 
 // ─── Sala Espera ─────────────────────────────────────────────────────────────
-function SalaEspera({ codigo, nombre, sala, esHost, onIniciar }: {
+function SalaEspera({ codigo, nombre, sala, esHost, onIniciar, onBack }: {
   codigo: string;
   nombre: string;
   sala: Sala;
   esHost: boolean;
   onIniciar: () => void;
+  onBack?: () => void;
 }) {
   const estado = sala.estado_json;
   const nombresJugadores = Object.keys(estado.jugadores);
@@ -758,7 +782,7 @@ function SalaEspera({ codigo, nombre, sala, esHost, onIniciar }: {
 }
 
 // ─── Juego ────────────────────────────────────────────────────────────────────
-function Juego({ codigo, nombre, estado, jugador, jugables, esMiTurno, puedeRobar, puedePasar, onColocarFicha, onRobar, onPasar }: {
+function Juego({ codigo, nombre, estado, jugador, jugables, esMiTurno, puedeRobar, puedePasar, onColocarFicha, onRobar, onPasar, onBack }: {
   codigo: string;
   nombre: string;
   estado: EstadoSala;
@@ -770,12 +794,14 @@ function Juego({ codigo, nombre, estado, jugador, jugables, esMiTurno, puedeRoba
   onColocarFicha: (f: Ficha) => void;
   onRobar: () => void;
   onPasar: () => void;
+  onBack?: () => void;
 }) {
   const nombresJugadores = Object.keys(estado.jugadores);
   const otrosJugadores = nombresJugadores.filter(n => n !== nombre);
 
   return (
     <div style={styles.juegoContainer}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
       {/* Header con puntajes */}
       <div style={styles.header}>
         <div style={styles.codigoDisplay}>Sala: {codigo}</div>
@@ -888,15 +914,17 @@ function Juego({ codigo, nombre, estado, jugador, jugables, esMiTurno, puedeRoba
 }
 
 // ─── Ronda Terminada ─────────────────────────────────────────────────────────
-function RondaTerminada({ ganador, puntajes, config, esHost, onNuevaRonda }: {
+function RondaTerminada({ ganador, puntajes, config, esHost, onNuevaRonda, onBack }: {
   ganador: string;
   puntajes: Record<string, number>;
   config: ConfigSala;
   esHost: boolean;
   onNuevaRonda: () => void;
+  onBack?: () => void;
 }) {
   return (
     <div style={styles.fullPage}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
       <div style={styles.resultadoCard}>
         <div style={styles.resultadoTitle}>🎉 ¡Ronda Terminada!</div>
         <div style={styles.ganadorDisplay}>Ganador: {ganador}</div>
@@ -919,12 +947,14 @@ function RondaTerminada({ ganador, puntajes, config, esHost, onNuevaRonda }: {
 }
 
 // ─── Partido Terminado ───────────────────────────────────────────────────────
-function PartidoTerminado({ ganador, puntajes }: {
+function PartidoTerminado({ ganador, puntajes, onBack }: {
   ganador: string;
   puntajes: Record<string, number>;
+  onBack?: () => void;
 }) {
   return (
     <div style={styles.fullPage}>
+      {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
       <div style={styles.resultadoCard}>
         <div style={styles.resultadoTitle}>🏆 ¡Partido Terminado!</div>
         <div style={styles.ganadorDisplay}>Ganador: {ganador}</div>

@@ -372,7 +372,14 @@ function Juego({ codigo, jugador, nombre, salaInicial, onBack, onMultijugador }:
     await patchSala(codigo, { estado: 'apuestas', numeroGanador: null, apuestas: {} });
   };
 
-  if (!sala) return <div style={{ ...styles.fullPage, color: '#888', fontSize: 16 }}>Cargando...</div>;
+  if (!sala) {
+    return (
+      <div style={styles.fullPage}>
+        {onBack && <button style={styles.backButton} onClick={onBack}>← Volver</button>}
+        <div style={{ color: '#888', fontSize: 16 }}>Cargando...</div>
+      </div>
+    );
+  }
 
   const numeroGanador = sala.numeroGanador;
   const colorGanador = numeroGanador !== null ? getColor(numeroGanador) : null;
