@@ -6,8 +6,8 @@ import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPA_KEY = import.meta.env.VITE_SUPABASE_KEY || '';
+const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || 'https://qhnmxvexkizcsmivfuam.supabase.co';
+const SUPA_KEY = import.meta.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFobm14dmV4a2l6Y3NtaXZmdWFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTIyMTI4MSwiZXhwIjoyMDg2Nzk3MjgxfQ.b2N86NyMG4F3CXcgTnzOjqx7AZPyDTa4QFFCtOSK42s';
 const supabase = createClient(SUPA_URL, SUPA_KEY);
 
 export function PerfilView({ onClose }: { onClose: () => void }) {
