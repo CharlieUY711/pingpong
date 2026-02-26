@@ -1,15 +1,17 @@
 /**
- * AuthContext.tsx — Contexto global de autenticación
- * Maneja sesión, perfiles, Coras, Nectar y funciones de login/logout
+ * AuthContext.tsx — Contexto global de usuario
+ * Maneja sesión local con solo nombre, perfiles, Coras, Nectar
  */
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || 'https://qhnmxvexkizcsmivfuam.supabase.co';
 const SUPA_KEY = import.meta.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFobm14dmV4a2l6Y3NtaXZmdWFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTIyMTI4MSwiZXhwIjoyMDg2Nzk3MjgxfQ.b2N86NyMG4F3CXcgTnzOjqx7AZPyDTa4QFFCtOSK42s';
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
 
 const supabase: SupabaseClient = createClient(SUPA_URL, SUPA_KEY);
+
+// Clave para localStorage
+const STORAGE_KEY = 'gamehub_usuario';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 export interface MovimientoCoras {
@@ -47,7 +49,6 @@ interface Estadistica {
 
 interface AuthContextType {
   usuario: Usuario | null;
-  user: User | null;
   estadisticas: Estadistica[];
   historialCoras: MovimientoCoras[];
   cargando: boolean;
@@ -55,20 +56,8 @@ interface AuthContextType {
   esAdmin: boolean;
   esJunior: boolean;
   error: string | null;
-  loginGoogle: () => Promise<void>;
-  // loginSMS: (telefono: string) => Promise<void>;
-  // verificarOTP: (telefono: string, codigo: string) => Promise<void>;
-  loginEmail: (email: string, password: string) => Promise<void>;
-  registrar: (data: {
-    nombre: string;
-    email: string;
-    password: string;
-    perfil: 'adulto' | 'junior';
-    pin_parental?: string;
-    creado_por?: string;
-    avatar: string;
-  }) => Promise<void>;
-  logout: () => Promise<void>;
+  iniciarSesion: (nombre: string) => void;
+  logout: () => void;
   actualizarNectar: (nuevoNectar: number) => Promise<void>;
   actualizarEstadisticas: (juego: string, victoria: boolean, corasGanadas?: number) => Promise<void>;
   buscarUsuarioPorNombre: (nombre: string) => Promise<Usuario | null>;
@@ -79,7 +68,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ─── Provider ───────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [estadisticas, setEstadisticas] = useState<Estadistica[]>([]);
   const [historialCoras, setHistorialCoras] = useState<MovimientoCoras[]>([]);
@@ -88,104 +76,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   // ─── Computed values ───────────────────────────────────────────────────────
-  const esAdmin = user?.email === ADMIN_EMAIL;
+  const esAdmin = false;
   const esJunior = usuario?.perfil === 'junior';
 
-  // ─── Cargar usuario desde Supabase ────────────────────────────────────────
-  const cargarUsuario = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('gh_usuarios')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      // Si el usuario no existe, crearlo automáticamente
-      if (error) {
-        // Verificar si es un error de "no encontrado"
-        const esUsuarioNoEncontrado = 
-          error.code === 'PGRST116' || 
-          error.message?.includes('No rows') || 
-          error.message?.includes('not found') ||
-          error.message?.includes('0 rows');
-        
-        if (esUsuarioNoEncontrado) {
-          // Usuario no encontrado, obtener datos del auth user
-          const { data: authUser } = await supabase.auth.getUser();
-          if (authUser?.user) {
-            const nombre = authUser.user.user_metadata?.full_name || 
-                          authUser.user.user_metadata?.name || 
-                          authUser.user.email?.split('@')[0] || 
-                          'Usuario';
-            
-            const { error: insertError } = await supabase
-              .from('gh_usuarios')
-              .insert({
-                id: userId,
-                nombre: nombre,
-                perfil: 'adulto',
-                avatar: '🎮',
-                coras: 0,
-                nectar: 0,
-                casino_habilitado: false,
-              });
-            
-            if (insertError) {
-              console.error('Error creando usuario:', insertError);
-              throw insertError;
-            }
-            
-            // Recargar el usuario recién creado
-            const { data: nuevoUsuario, error: errorNuevo } = await supabase
-              .from('gh_usuarios')
-              .select('*')
-              .eq('id', userId)
-              .single();
-            
-            if (errorNuevo) throw errorNuevo;
-            if (nuevoUsuario) {
-              const usuarioData: Usuario = {
-                ...nuevoUsuario,
-                coras: nuevoUsuario.coras ?? 0,
-                nectar: nuevoUsuario.nectar ?? 0,
-                casino_habilitado: nuevoUsuario.casino_habilitado ?? false,
-              };
-              setUsuario(usuarioData);
-              setLogueado(true);
-              return;
-            }
-          }
-        } else {
-          // Otro tipo de error
-          throw error;
-        }
-      } else if (data) {
-        // Usuario existe, cargar datos
-        const usuarioData: Usuario = {
-          ...data,
-          coras: data.coras ?? 0,
-          nectar: data.nectar ?? 0,
-          casino_habilitado: data.casino_habilitado ?? false,
-        };
-        setUsuario(usuarioData);
-        setLogueado(true);
-      }
-    } catch (err: any) {
-      console.error('Error cargando usuario:', err);
-      setError(err.message || 'Error al cargar usuario');
-    }
+  // ─── Generar ID único ──────────────────────────────────────────────────────
+  const generarId = () => {
+    return `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // ─── Recargar usuario ─────────────────────────────────────────────────────
-  const recargarUsuario = async () => {
-    if (user?.id) {
-      await cargarUsuario(user.id);
-      await cargarHistorialCoras(user.id);
+  // ─── Cargar usuario desde localStorage ─────────────────────────────────────
+  const cargarUsuarioLocal = () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const usuarioData: Usuario = JSON.parse(stored);
+        setUsuario(usuarioData);
+        setLogueado(true);
+        // Cargar estadísticas e historial si hay ID
+        if (usuarioData.id) {
+          cargarEstadisticas(usuarioData.id);
+          cargarHistorialCoras(usuarioData.id);
+        }
+      }
+    } catch (err: any) {
+      console.error('Error cargando usuario local:', err);
+    } finally {
+      setCargando(false);
     }
   };
 
   // ─── Cargar historial de Coras ────────────────────────────────────────────
   const cargarHistorialCoras = async (userId: string) => {
+    if (!userId || userId.startsWith('local_')) {
+      setHistorialCoras([]);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('gh_movimientos_coras')
@@ -198,11 +123,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data) setHistorialCoras(data);
     } catch (err: any) {
       console.error('Error cargando historial de Coras:', err);
+      setHistorialCoras([]);
     }
   };
 
   // ─── Cargar estadísticas ───────────────────────────────────────────────────
   const cargarEstadisticas = async (userId: string) => {
+    if (!userId || userId.startsWith('local_')) {
+      setEstadisticas([]);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('gh_estadisticas')
@@ -213,198 +143,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data) setEstadisticas(data);
     } catch (err: any) {
       console.error('Error cargando estadísticas:', err);
+      setEstadisticas([]);
     }
   };
 
-  // ─── Verificar sesión activa ───────────────────────────────────────────────
-  useEffect(() => {
-    const verificarSesion = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-
-        if (session?.user) {
-          setUser(session.user);
-          await cargarUsuario(session.user.id);
-          await cargarEstadisticas(session.user.id);
-          await cargarHistorialCoras(session.user.id);
-        }
-      } catch (err: any) {
-        console.error('Error verificando sesión:', err);
-        setError(err.message);
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    verificarSesion();
-
-    // ─── Escuchar cambios de autenticación ───────────────────────────────────
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session: Session | null) => {
-        if (session?.user) {
-          setUser(session.user);
-          await cargarUsuario(session.user.id);
-          await cargarEstadisticas(session.user.id);
-          await cargarHistorialCoras(session.user.id);
-        } else {
-          setUser(null);
-          setUsuario(null);
-          setEstadisticas([]);
-          setHistorialCoras([]);
-          setLogueado(false);
-        }
-        setCargando(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // ─── Login con Google ──────────────────────────────────────────────────────
-  const loginGoogle = async () => {
+  // ─── Iniciar sesión con nombre ─────────────────────────────────────────────
+  const iniciarSesion = (nombre: string) => {
     try {
       setError(null);
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}${window.location.pathname}`
-        }
-      });
-      if (error) throw error;
+      const nuevoUsuario: Usuario = {
+        id: generarId(),
+        nombre: nombre.trim(),
+        perfil: 'adulto',
+        avatar: '🎮',
+        coras: 0,
+        nectar: 0,
+        casino_habilitado: false,
+        created_at: new Date().toISOString(),
+      };
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevoUsuario));
+      setUsuario(nuevoUsuario);
+      setLogueado(true);
+      setEstadisticas([]);
+      setHistorialCoras([]);
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión con Google');
-      throw err;
-    }
-  };
-
-  // ─── Login con SMS ─────────────────────────────────────────────────────────
-  const loginSMS = async (telefono: string) => {
-    try {
-      setError(null);
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: telefono,
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || 'Error al enviar código SMS');
-      throw err;
-    }
-  };
-
-  // ─── Verificar código OTP ──────────────────────────────────────────────────
-  const verificarOTP = async (telefono: string, codigo: string) => {
-    try {
-      setError(null);
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: telefono,
-        token: codigo,
-        type: 'sms',
-      });
-      if (error) throw error;
-
-      if (data.user) {
-        // Verificar si el usuario ya existe en gh_usuarios
-        const { data: usuarioExistente } = await supabase
-          .from('gh_usuarios')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (!usuarioExistente) {
-          // Crear usuario si no existe
-          const { error: insertError } = await supabase
-            .from('gh_usuarios')
-            .insert({
-              id: data.user.id,
-              nombre: telefono,
-              perfil: 'adulto',
-              avatar: '🎮',
-              coras: 0,
-              nectar: 0,
-              casino_habilitado: false,
-            });
-          if (insertError) throw insertError;
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Código inválido');
-      throw err;
-    }
-  };
-
-  // ─── Login con Email ───────────────────────────────────────────────────────
-  const loginEmail = async (email: string, password: string) => {
-    try {
-      setError(null);
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || 'Email o contraseña incorrectos');
-      throw err;
-    }
-  };
-
-  // ─── Registrar nuevo usuario ───────────────────────────────────────────────
-  const registrar = async (data: {
-    nombre: string;
-    email: string;
-    password: string;
-    perfil: 'adulto' | 'junior';
-    pin_parental?: string;
-    creado_por?: string;
-    avatar: string;
-  }) => {
-    try {
-      setError(null);
-
-      // Crear cuenta en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-      });
-      if (authError) throw authError;
-
-      if (!authData.user) throw new Error('No se pudo crear el usuario');
-
-      // Crear registro en gh_usuarios
-      const { error: usuarioError } = await supabase
-        .from('gh_usuarios')
-        .insert({
-          id: authData.user.id,
-          nombre: data.nombre,
-          perfil: data.perfil,
-          pin_parental: data.pin_parental,
-          creado_por: data.creado_por,
-          avatar: data.avatar,
-          coras: 0,
-          nectar: 0,
-          casino_habilitado: false,
-        });
-      if (usuarioError) throw usuarioError;
-    } catch (err: any) {
-      setError(err.message || 'Error al registrar usuario');
-      throw err;
+      setError(err.message || 'Error al iniciar sesión');
     }
   };
 
   // ─── Logout ────────────────────────────────────────────────────────────────
-  const logout = async () => {
-    try {
-      setError(null);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setUser(null);
-      setUsuario(null);
-      setEstadisticas([]);
-      setHistorialCoras([]);
-      setLogueado(false);
-    } catch (err: any) {
-      setError(err.message || 'Error al cerrar sesión');
-      throw err;
+  const logout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setUsuario(null);
+    setEstadisticas([]);
+    setHistorialCoras([]);
+    setLogueado(false);
+    setError(null);
+  };
+
+  // ─── Recargar usuario ─────────────────────────────────────────────────────
+  const recargarUsuario = async () => {
+    if (usuario?.id) {
+      cargarUsuarioLocal();
     }
   };
 
@@ -412,12 +193,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const actualizarNectar = async (nuevoNectar: number) => {
     if (!usuario) return;
     try {
-      const { error } = await supabase
-        .from('gh_usuarios')
-        .update({ nectar: nuevoNectar })
-        .eq('id', usuario.id);
-      if (error) throw error;
-      setUsuario({ ...usuario, nectar: nuevoNectar });
+      const usuarioActualizado = { ...usuario, nectar: nuevoNectar };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarioActualizado));
+      setUsuario(usuarioActualizado);
+      
+      // Si tiene ID de Supabase, actualizar en BD
+      if (usuario.id && !usuario.id.startsWith('local_')) {
+        const { error } = await supabase
+          .from('gh_usuarios')
+          .update({ nectar: nuevoNectar })
+          .eq('id', usuario.id);
+        if (error) throw error;
+      }
     } catch (err: any) {
       console.error('Error actualizando Nectar:', err);
     }
@@ -429,7 +216,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     victoria: boolean,
     corasGanadas: number = 0
   ) => {
-    if (!usuario) return;
+    if (!usuario || usuario.id.startsWith('local_')) {
+      // Usuario local, no guardar estadísticas en BD
+      return;
+    }
+    
     try {
       // Buscar estadística existente
       const { data: estadisticaExistente } = await supabase
@@ -492,11 +283,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ─── Cargar usuario al iniciar ─────────────────────────────────────────────
+  useEffect(() => {
+    cargarUsuarioLocal();
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
         usuario,
-        user,
         estadisticas,
         historialCoras,
         cargando,
@@ -504,11 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         esAdmin,
         esJunior,
         error,
-        loginGoogle,
-        // loginSMS,
-        // verificarOTP,
-        loginEmail,
-        registrar,
+        iniciarSesion,
         logout,
         actualizarNectar,
         actualizarEstadisticas,

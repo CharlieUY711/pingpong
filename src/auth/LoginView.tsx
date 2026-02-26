@@ -1,27 +1,20 @@
 /**
  * LoginView.tsx — Pantalla de login
- * Google OAuth, Email/Password
+ * Solo pide el nombre
  */
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
-import { RegisterView } from './RegisterView';
 
 export function LoginView() {
-  const { loginGoogle, loginEmail, error } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [mostrarEmail, setMostrarEmail] = useState(false);
-  const [mostrarRegistro, setMostrarRegistro] = useState(false);
+  const { iniciarSesion, error } = useAuth();
+  const [nombre, setNombre] = useState('');
   const [cargando, setCargando] = useState(false);
 
-  if (mostrarRegistro) {
-    return <RegisterView onVolver={() => setMostrarRegistro(false)} />;
-  }
-
-  const handleGoogleLogin = async () => {
+  const handleIniciarSesion = () => {
+    if (!nombre.trim()) return;
     setCargando(true);
     try {
-      await loginGoogle();
+      iniciarSesion(nombre);
     } catch (err) {
       console.error(err);
     } finally {
@@ -29,15 +22,9 @@ export function LoginView() {
     }
   };
 
-  const handleEmailLogin = async () => {
-    if (!email || !password) return;
-    setCargando(true);
-    try {
-      await loginEmail(email, password);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCargando(false);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && nombre.trim()) {
+      handleIniciarSesion();
     }
   };
 
@@ -53,86 +40,25 @@ export function LoginView() {
 
       {error && <div style={styles.error}>{error}</div>}
 
-      {!mostrarEmail && (
-        <>
-          <button
-            style={styles.buttonGoogle}
-            onClick={handleGoogleLogin}
-            disabled={cargando}
-          >
-            {cargando ? (
-              <span>⏳ Cargando...</span>
-            ) : (
-              <>
-                <span style={styles.googleIcon}>🔵</span>
-                <span>Entrar con Google</span>
-              </>
-            )}
-          </button>
-
-          <div style={styles.separator}>
-            <div style={styles.separatorLine}></div>
-            <span style={styles.separatorText}>o</span>
-            <div style={styles.separatorLine}></div>
-          </div>
-
-          <button
-            style={styles.buttonSecondary}
-            onClick={() => setMostrarEmail(true)}
-            disabled={cargando}
-          >
-            Iniciar sesión con email
-          </button>
-
-          <button
-            style={styles.linkButton}
-            onClick={() => setMostrarRegistro(true)}
-            disabled={cargando}
-          >
-            Registrarse con email
-          </button>
-        </>
-      )}
-
-      {mostrarEmail && (
-        <>
-          <div style={styles.inputGroup}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              disabled={cargando}
-            />
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              disabled={cargando}
-            />
-            <button
-              style={styles.buttonPrimary}
-              onClick={handleEmailLogin}
-              disabled={cargando || !email || !password}
-            >
-              Iniciar sesión
-            </button>
-          </div>
-          <button
-            style={styles.linkButton}
-            onClick={() => {
-              setMostrarEmail(false);
-              setEmail('');
-              setPassword('');
-            }}
-          >
-            Volver
-          </button>
-        </>
-      )}
+      <div style={styles.inputGroup}>
+        <input
+          type="text"
+          placeholder="Ingresa tu nombre"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          onKeyPress={handleKeyPress}
+          style={styles.input}
+          disabled={cargando}
+          autoFocus
+        />
+        <button
+          style={styles.buttonPrimary}
+          onClick={handleIniciarSesion}
+          disabled={cargando || !nombre.trim()}
+        >
+          {cargando ? '⏳ Cargando...' : 'Entrar'}
+        </button>
+      </div>
     </div>
   );
 }
