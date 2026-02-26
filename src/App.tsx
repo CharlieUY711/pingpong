@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import PongView from './PongView'
 import RuletaView from './games/RuletaView'
+import DominoView from './games/DominoView'
 import EscobaView from './games/EscobaView'
+import GeneralaView from './games/GeneralaView'
 
-type Vista = 'menu' | 'pong' | 'ruleta' | 'escoba'
+type Vista = 'menu' | 'pong' | 'ruleta' | 'domino' | 'escoba' | 'generala'
 
 function App() {
   const [vista, setVista] = useState<Vista>('menu')
 
   if (vista === 'pong') return <PongView />
   if (vista === 'ruleta') return <RuletaView />
+  if (vista === 'domino') return <DominoView />
   if (vista === 'escoba') return <EscobaView />
 
   return (
@@ -30,10 +33,22 @@ function App() {
           <div style={menuStyles.cardSubtitle}>Casino multijugador</div>
         </div>
 
+        <div style={menuStyles.card} onClick={() => setVista('domino')}>
+          <div style={menuStyles.cardIcon}>🎴</div>
+          <div style={menuStyles.cardTitle}>Dominó</div>
+          <div style={menuStyles.cardSubtitle}>Clásico en parejas</div>
+        </div>
+
         <div style={menuStyles.card} onClick={() => setVista('escoba')}>
           <div style={menuStyles.cardIcon}>🃏</div>
           <div style={menuStyles.cardTitle}>Escoba del 15</div>
           <div style={menuStyles.cardSubtitle}>Juego de cartas multijugador</div>
+        </div>
+
+        <div style={menuStyles.card} onClick={() => setVista('generala')}>
+          <div style={menuStyles.cardIcon}>🎲</div>
+          <div style={menuStyles.cardTitle}>Generala</div>
+          <div style={menuStyles.cardSubtitle}>Uruguaya 2-6 jugadores</div>
         </div>
       </div>
     </div>
