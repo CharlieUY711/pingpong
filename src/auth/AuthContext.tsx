@@ -56,8 +56,8 @@ interface AuthContextType {
   esJunior: boolean;
   error: string | null;
   loginGoogle: () => Promise<void>;
-  loginSMS: (telefono: string) => Promise<void>;
-  verificarOTP: (telefono: string, codigo: string) => Promise<void>;
+  // loginSMS: (telefono: string) => Promise<void>;
+  // verificarOTP: (telefono: string, codigo: string) => Promise<void>;
   loginEmail: (email: string, password: string) => Promise<void>;
   registrar: (data: {
     nombre: string;
@@ -207,11 +207,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginGoogle = async () => {
     try {
       setError(null);
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
-        },
+          redirectTo: 'https://tu-app.com/auth/callback' // o tu deep link en móvil
+        }
       });
       if (error) throw error;
     } catch (err: any) {
@@ -447,8 +447,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         esJunior,
         error,
         loginGoogle,
-        loginSMS,
-        verificarOTP,
+        // loginSMS,
+        // verificarOTP,
         loginEmail,
         registrar,
         logout,

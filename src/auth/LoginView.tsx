@@ -1,19 +1,16 @@
 /**
  * LoginView.tsx — Pantalla de login
- * Google OAuth, SMS OTP, Email/Password
+ * Google OAuth, Email/Password
  */
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { RegisterView } from './RegisterView';
 
 export function LoginView() {
-  const { loginGoogle, loginSMS, verificarOTP, loginEmail, error } = useAuth();
-  const [telefono, setTelefono] = useState('');
-  const [codigoOTP, setCodigoOTP] = useState('');
+  const { loginGoogle, loginEmail, error } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mostrarEmail, setMostrarEmail] = useState(false);
-  const [mostrarOTP, setMostrarOTP] = useState(false);
   const [mostrarRegistro, setMostrarRegistro] = useState(false);
   const [cargando, setCargando] = useState(false);
 
@@ -25,31 +22,6 @@ export function LoginView() {
     setCargando(true);
     try {
       await loginGoogle();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  const handleEnviarSMS = async () => {
-    if (!telefono) return;
-    setCargando(true);
-    try {
-      await loginSMS(telefono);
-      setMostrarOTP(true);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  const handleVerificarOTP = async () => {
-    if (!codigoOTP || codigoOTP.length !== 6) return;
-    setCargando(true);
-    try {
-      await verificarOTP(telefono, codigoOTP);
     } catch (err) {
       console.error(err);
     } finally {
@@ -81,7 +53,7 @@ export function LoginView() {
 
       {error && <div style={styles.error}>{error}</div>}
 
-      {!mostrarEmail && !mostrarOTP && (
+      {!mostrarEmail && (
         <>
           <button
             style={styles.buttonGoogle}
@@ -98,69 +70,12 @@ export function LoginView() {
             )}
           </button>
 
-          <div style={styles.separator}>
-            <div style={styles.separatorLine}></div>
-            <span style={styles.separatorText}>o</span>
-            <div style={styles.separatorLine}></div>
-          </div>
-
-          <div style={styles.inputGroup}>
-            <input
-              type="tel"
-              placeholder="Teléfono (+54 9 11 1234-5678)"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              style={styles.input}
-              disabled={cargando}
-            />
-            <button
-              style={styles.buttonSMS}
-              onClick={handleEnviarSMS}
-              disabled={cargando || !telefono}
-            >
-              Recibir código SMS
-            </button>
-          </div>
-
           <button
             style={styles.linkButton}
             onClick={() => setMostrarRegistro(true)}
             disabled={cargando}
           >
             Registrarse con email
-          </button>
-        </>
-      )}
-
-      {mostrarOTP && (
-        <>
-          <div style={styles.inputGroup}>
-            <input
-              type="text"
-              placeholder="Código de 6 dígitos"
-              value={codigoOTP}
-              onChange={(e) => setCodigoOTP(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              style={styles.input}
-              maxLength={6}
-              inputMode="numeric"
-              disabled={cargando}
-            />
-            <button
-              style={styles.buttonPrimary}
-              onClick={handleVerificarOTP}
-              disabled={cargando || codigoOTP.length !== 6}
-            >
-              Verificar código
-            </button>
-          </div>
-          <button
-            style={styles.linkButton}
-            onClick={() => {
-              setMostrarOTP(false);
-              setCodigoOTP('');
-            }}
-          >
-            Volver
           </button>
         </>
       )}
