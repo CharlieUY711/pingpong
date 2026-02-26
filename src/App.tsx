@@ -13,6 +13,8 @@ function App() {
 
   if (vista === 'pong') return <PongView />
   if (vista === 'ruleta') return <RuletaView />
+  if (vista === 'escoba') return <EscobaView />
+  if (vista === 'domino') return <DominoView />
   if (vista === 'batallaNaval') return <BatallaNavalView />
   if (vista === 'rummy') return <RummyView />
   if (vista === 'blackjack') return <BlackJackView />
