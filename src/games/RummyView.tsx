@@ -232,53 +232,54 @@ function calcularPuntosCarta(carta: Carta): number {
 // ─── Componente principal ────────────────────────────────────────────────────
 export function RummyView({ onBack }: { onBack?: () => void }) {
   const { usuario } = useAuth();
-  const [fase, setFase] = useState<'lobby' | 'sala' | 'juego'>('lobby');
-  const nombre = usuario?.nombre || '';
+  const [fase, setFase] = useState<'sala' | 'juego' | 'multijugador'>('sala');
+  const nombre = usuario?.nombre || 'Jugador';
   const [codigo, setCodigo] = useState('');
   const [codigoInput, setCodigoInput] = useState('');
   const [sala, setSala] = useState<Sala | null>(null);
   const [error, setError] = useState('');
-  const [esHost, setEsHost] = useState(false);
-  const [miPosicion, setMiPosicion] = useState<1 | 2 | 3 | 4 | null>(null);
+  const [esHost, setEsHost] = useState(true);
+  const [miPosicion, setMiPosicion] = useState<1 | 2 | 3 | 4>(1);
 
-  // ── Crear sala ──────────────────────────────────────────────────────────────
-  const handleCrear = async () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
-    const code = genCode();
-    const estadoInicial: EstadoJuego = {
-      fase: 'esperando',
-      jugadores: [{
-        nombre: nombre.trim(),
-        posicion: 1,
-        cartas: [],
-      }],
-      turno: 0,
-      mazo: [],
-      descarte: [],
-      combinaciones: [],
-      puntajes: { pareja1: 0, pareja2: 0 },
-      rondaActual: 1,
+  // ── Crear sala automáticamente ──────────────────────────────────────────────
+  useEffect(() => {
+    const crearSalaAuto = async () => {
+      if (!nombre.trim()) return;
+      const code = genCode();
+      const estadoInicial: EstadoJuego = {
+        fase: 'esperando',
+        jugadores: [{
+          nombre: nombre.trim(),
+          posicion: 1,
+          cartas: [],
+        }],
+        turno: 0,
+        mazo: [],
+        descarte: [],
+        combinaciones: [],
+        puntajes: { pareja1: 0, pareja2: 0 },
+        rondaActual: 1,
+      };
+
+      await fetch(`${SUPA_URL}/rest/v1/rummy_salas`, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({
+          id: code,
+          host: nombre.trim(),
+          estado_json: estadoInicial,
+        }),
+      });
+
+      setCodigo(code);
+      setEsHost(true);
+      setMiPosicion(1);
     };
+    crearSalaAuto();
+  }, [nombre]);
 
-    await fetch(`${SUPA_URL}/rest/v1/rummy_salas`, {
-      method: 'POST',
-      headers: HEADERS,
-      body: JSON.stringify({
-        id: code,
-        host: nombre.trim(),
-        estado_json: estadoInicial,
-      }),
-    });
-
-    setCodigo(code);
-    setEsHost(true);
-    setMiPosicion(1);
-    setFase('sala');
-  };
-
-  // ── Unirse ──────────────────────────────────────────────────────────────────
+  // ── Unirse a sala multijugador ──────────────────────────────────────────────
   const handleUnirse = async () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
     if (!codigoInput.trim()) { setError('Ingresá el código'); return; }
     
     const s = await getSala(codigoInput.toUpperCase());
@@ -353,20 +354,6 @@ export function RummyView({ onBack }: { onBack?: () => void }) {
   };
 
   // ── Render fases ───────────────────────────────────────────────────────────
-  if (fase === 'lobby') {
-    return (
-      <Lobby
-        nombre={nombre}
-        setNombre={setNombre}
-        codigoInput={codigoInput}
-        setCodigoInput={setCodigoInput}
-        error={error}
-        setError={setError}
-        onCrear={handleCrear}
-        onUnirse={handleUnirse}
-      />
-    );
-  }
 
   if (fase === 'sala' && sala) {
     return (
@@ -391,6 +378,10 @@ export function RummyView({ onBack }: { onBack?: () => void }) {
         onActualizarSala={setSala}
       />
     );
+  }
+
+  if (!codigo) {
+    return <div style={styles.fullPage}>Cargando rummy...</div>;
   }
 
   return <div style={styles.fullPage}>Cargando...</div>;

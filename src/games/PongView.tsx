@@ -5,6 +5,7 @@
  * Modo vs CPU con layout vertical
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../auth/AuthContext';
 
 // ─── Config Supabase ─────────────────────────────────────────────────────────
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || 'https://qhnmxvexkizcsmivfuam.supabase.co';
@@ -98,76 +99,80 @@ async function unirSala(id: string, nombre: string): Promise<boolean> {
 
 // ─── Componente principal ────────────────────────────────────────────────────
 export function PongView({ onBack }: PongViewProps) {
-  const [fase, setFase] = useState<'lobby' | 'sala' | 'cpu-setup' | 'juego'>('lobby');
-  const [nombre, setNombre] = useState('');
+  const { usuario } = useAuth();
+  const [fase, setFase] = useState<'juego' | 'multijugador'>('juego');
   const [codigo, setCodigo] = useState('');
   const [codigoInput, setCodigoInput] = useState('');
   const [jugador, setJugador] = useState<1 | 2>(1);
   const [sala, setSala] = useState<Sala | null>(null);
   const [error, setError] = useState('');
-  const [esperando, setEsperando] = useState(false);
-  const [modoCPU, setModoCPU] = useState(false);
+  const [modoCPU, setModoCPU] = useState(true);
   const [dificultad, setDificultad] = useState<DificultadCPU>('normal');
-  const [nombreCPU, setNombreCPU] = useState('');
 
-  // ── Crear sala ──────────────────────────────────────────────────────────────
-  const handleCrear = async () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
-    const code = genCode();
-    await crearSala(code, nombre.trim());
-    setCodigo(code);
+  const nombre = usuario?.nombre || 'Jugador';
+
+  // ── Iniciar juego automáticamente (modo CPU por defecto) ────────────────────
+  useEffect(() => {
+    // Iniciar directamente en modo CPU
     setJugador(1);
-    setFase('sala');
-    setEsperando(true);
-  };
+    setModoCPU(true);
+    setDificultad('normal');
+  }, []);
 
-  // ── Unirse ──────────────────────────────────────────────────────────────────
+  // ── Unirse a sala multijugador ─────────────────────────────────────────────
   const handleUnirse = async () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
     if (!codigoInput.trim()) { setError('Ingresá el código'); return; }
-    const ok = await unirSala(codigoInput.toUpperCase(), nombre.trim());
+    const ok = await unirSala(codigoInput.toUpperCase(), nombre);
     if (!ok) { setError('Sala no encontrada o ya llena'); return; }
     setCodigo(codigoInput.toUpperCase());
     setJugador(2);
+    setModoCPU(false);
     setFase('juego');
   };
-
-  // ── Jugar vs CPU ────────────────────────────────────────────────────────────
-  const handleJugarCPU = () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
-    setNombreCPU(nombre.trim());
-    setModoCPU(true);
-    setFase('cpu-setup');
-  };
-
-  // ── Iniciar juego CPU ───────────────────────────────────────────────────────
-  const handleIniciarCPU = () => {
-    if (!nombreCPU.trim()) { setError('Ingresá tu nombre'); return; }
-    setJugador(1);
-    setFase('juego');
-  };
-
-  // ── Polling en sala de espera ────────────────────────────────────────────────
-  useEffect(() => {
-    if (fase !== 'sala' || !esperando) return;
-    const iv = setInterval(async () => {
-      const s = await getSala(codigo);
-      if (s?.estado === 'jugando') {
-        setSala(s);
-        setFase('juego');
-        setEsperando(false);
-        clearInterval(iv);
-      }
-    }, 1500);
-    return () => clearInterval(iv);
-  }, [fase, esperando, codigo]);
 
   // ── Render fases ─────────────────────────────────────────────────────────────
-  if (fase === 'lobby') return <Lobby nombre={nombre} setNombre={setNombre} codigoInput={codigoInput} setCodigoInput={setCodigoInput} error={error} setError={setError} onCrear={handleCrear} onUnirse={handleUnirse} onJugarCPU={handleJugarCPU} onBack={onBack} />;
-  if (fase === 'sala') return <SalaEspera codigo={codigo} nombre={nombre} onBack={onBack} />;
-  if (fase === 'cpu-setup') return <CPUSetup nombre={nombreCPU} setNombre={setNombreCPU} dificultad={dificultad} setDificultad={setDificultad} error={error} setError={setError} onIniciar={handleIniciarCPU} onBack={onBack} />;
-  if (fase === 'juego') return <Juego codigo={codigo} jugador={jugador} salaInicial={sala} modoCPU={modoCPU} dificultad={dificultad} onBack={onBack} />;
-  return null;
+  if (fase === 'multijugador') {
+    return (
+      <div style={styles.fullPage}>
+        <button style={styles.backButton} onClick={onBack}>← Volver</button>
+        <div style={styles.lobbyCard}>
+          <div style={styles.title}>🏓 PING PONG MULTIJUGADOR</div>
+          <div style={styles.subtitle}>Ingresa el código de la sala</div>
+          <input
+            style={styles.input}
+            placeholder="Código (ABCD)"
+            value={codigoInput}
+            onChange={e => { setCodigoInput(e.target.value.toUpperCase()); setError(''); }}
+            maxLength={4}
+            onKeyPress={(e) => e.key === 'Enter' && handleUnirse()}
+          />
+          <button style={styles.btnPrimary} onClick={handleUnirse}>
+            Unirse
+          </button>
+          {error && <div style={styles.errorMsg}>{error}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  if (fase === 'juego') {
+    return (
+      <Juego 
+        codigo={codigo || 'local'} 
+        jugador={jugador} 
+        salaInicial={sala} 
+        modoCPU={modoCPU} 
+        dificultad={dificultad} 
+        onBack={onBack}
+      />
+    );
+  }
+
+  return (
+    <div style={styles.fullPage}>
+      <div style={styles.loadingText}>Cargando ping pong...</div>
+    </div>
+  );
 }
 
 // ─── Helper de estilos para netDot ───────────────────────────────────────────
@@ -919,6 +924,12 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
     color: '#333',
     fontSize: 12,
+  },
+  loadingText: {
+    color: '#FF6B35',
+    fontSize: 24,
+    textShadow: '0 0 20px #FF6B35',
+    textAlign: 'center',
   },
   errorMsg: {
     background: '#3a1a1a',

@@ -253,13 +253,14 @@ async function unirSala(id: string, nombre: string): Promise<boolean> {
 // ─── Componente principal ────────────────────────────────────────────────────
 export function PokerView({ onBack }: { onBack?: () => void }) {
   const { usuario } = useAuth();
-  const [fase, setFase] = useState<'lobby' | 'sala'>('lobby');
-  const [nombre, setNombre] = useState(usuario?.nombre || '');
+  const [fase, setFase] = useState<'sala' | 'multijugador'>('sala');
   const [codigo, setCodigo] = useState('');
   const [codigoInput, setCodigoInput] = useState('');
   const [sala, setSala] = useState<Sala | null>(null);
   const [error, setError] = useState('');
-  const [esHost, setEsHost] = useState(false);
+  const [esHost, setEsHost] = useState(true);
+
+  const nombre = usuario?.nombre || 'Jugador';
 
   // ── Verificar perfil ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -280,19 +281,22 @@ export function PokerView({ onBack }: { onBack?: () => void }) {
     );
   }
 
-  const handleCrear = async () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
-    const code = genCode();
-    await crearSala(code, nombre.trim(), usuario?.id);
-    setCodigo(code);
-    setEsHost(true);
-    setFase('sala');
-  };
+  // ── Iniciar juego automáticamente ───────────────────────────────────────────
+  useEffect(() => {
+    const iniciarJuego = async () => {
+      if (!usuario || usuario.perfil !== 'adulto') return;
+      const code = genCode();
+      await crearSala(code, nombre, usuario.id);
+      setCodigo(code);
+      setEsHost(true);
+    };
+    iniciarJuego();
+  }, [usuario, nombre]);
 
+  // ── Unirse a sala multijugador ──────────────────────────────────────────────
   const handleUnirse = async () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
     if (!codigoInput.trim()) { setError('Ingresá el código'); return; }
-    const ok = await unirSala(codigoInput.toUpperCase(), nombre.trim());
+    const ok = await unirSala(codigoInput.toUpperCase(), nombre);
     if (!ok) { setError('Sala no encontrada o llena'); return; }
     setCodigo(codigoInput.toUpperCase());
     setEsHost(false);
@@ -308,22 +312,32 @@ export function PokerView({ onBack }: { onBack?: () => void }) {
     return () => clearInterval(iv);
   }, [fase, codigo]);
 
-  if (fase === 'lobby') {
+  if (fase === 'multijugador') {
     return (
-      <Lobby
-        nombre={nombre}
-        setNombre={setNombre}
-        codigoInput={codigoInput}
-        setCodigoInput={setCodigoInput}
-        error={error}
-        setError={setError}
-        onCrear={handleCrear}
-        onUnirse={handleUnirse}
-      />
+      <div style={styles.fullPage}>
+        <div style={styles.casinoBg} />
+        <button style={styles.backButton} onClick={onBack}>← Volver</button>
+        <div style={styles.lobbyCard}>
+          <div style={styles.title}>🃏 POKER MULTIJUGADOR</div>
+          <div style={styles.subtitle}>Ingresa el código de la sala</div>
+          <input
+            style={styles.input}
+            placeholder="Código (ABCD)"
+            value={codigoInput}
+            onChange={e => { setCodigoInput(e.target.value.toUpperCase()); setError(''); }}
+            maxLength={4}
+            onKeyPress={(e) => e.key === 'Enter' && handleUnirse()}
+          />
+          <button style={styles.btnPrimary} onClick={handleUnirse}>
+            Unirse
+          </button>
+          {error && <div style={styles.errorMsg}>{error}</div>}
+        </div>
+      </div>
     );
   }
 
-  if (fase === 'sala' && sala) {
+  if (fase === 'sala' && sala && codigo) {
     return (
       <MesaPoker
         codigo={codigo}
@@ -333,6 +347,10 @@ export function PokerView({ onBack }: { onBack?: () => void }) {
         onActualizarSala={setSala}
       />
     );
+  }
+
+  if (!codigo) {
+    return <div style={styles.fullPage}>Cargando poker...</div>;
   }
 
   return <div style={styles.fullPage}>Cargando...</div>;
@@ -856,9 +874,25 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     minHeight: '100vh',
     background: '#0a0a0a',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
     fontFamily: "'Courier New', monospace",
-    overflow: 'auto',
-    userSelect: 'none',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    background: '#111',
+    border: '1px solid #333',
+    borderRadius: 8,
+    padding: '8px 16px',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    zIndex: 1000,
   },
   casinoBg: {
     position: 'fixed',

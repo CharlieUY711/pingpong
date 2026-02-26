@@ -4,6 +4,7 @@
  * Optimizado para celular portrait
  */
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../auth/AuthContext';
 
 // ─── Config Supabase ─────────────────────────────────────────────────────────
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || 'https://qhnmxvexkizcsmivfuam.supabase.co';
@@ -458,13 +459,16 @@ function Juego({ sala, jugadorId, onAnotar, onTachar, onTirar, onGuardarDado, on
 
 // ─── Componente Principal ────────────────────────────────────────────────────
 export default function GeneralaView({ onBack }: { onBack?: () => void }) {
-  const [nombre, setNombre] = useState('');
+  const { usuario } = useAuth();
+  const nombre = usuario?.nombre || 'Jugador';
   const [codigo, setCodigo] = useState('');
+  const [codigoInput, setCodigoInput] = useState('');
   const [error, setError] = useState('');
   const [sala, setSala] = useState<Sala | null>(null);
   const [jugadorId, setJugadorId] = useState<string>('');
   const channelRef = useRef<any>(null);
   const [animando, setAnimando] = useState(false);
+  const [fase, setFase] = useState<'sala' | 'multijugador'>('sala');
 
   // Inicializar Supabase client
   useEffect(() => {
@@ -479,82 +483,83 @@ export default function GeneralaView({ onBack }: { onBack?: () => void }) {
     }
   }, []);
 
-  const crearSala = async () => {
-    if (!nombre.trim()) {
-      setError('Ingresá tu nombre');
-      return;
-    }
+  // ── Crear sala automáticamente ──────────────────────────────────────────────
+  useEffect(() => {
+    const crearSalaAuto = async () => {
+      if (!nombre.trim()) return;
+      
+      try {
+        const codigoSala = generarCodigo();
+        const nuevoJugadorId = `jugador_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        setJugadorId(nuevoJugadorId);
 
-    try {
-      const codigoSala = generarCodigo();
-      const nuevoJugadorId = `jugador_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      setJugadorId(nuevoJugadorId);
+        const planillaInicial: Planilla = {
+          unos: null, doses: null, treses: null, cuatros: null,
+          cincos: null, seises: null, escalera: null, full: null,
+          poker: null, generala: null,
+        };
 
-      const planillaInicial: Planilla = {
-        unos: null, doses: null, treses: null, cuatros: null,
-        cincos: null, seises: null, escalera: null, full: null,
-        poker: null, generala: null,
-      };
+        const estadoInicial: EstadoSala = {
+          jugadores: [{
+            id: nuevoJugadorId,
+            nombre: nombre.trim(),
+            planilla: planillaInicial,
+            esHost: true,
+          }],
+          turnoActual: 0,
+          estado: 'esperando',
+          jugadorActivo: null,
+          dadosActuales: [],
+          dadosGuardados: [],
+          tiradasRestantes: 0,
+          primeraTirada: false,
+          ganador: null,
+          generalaDoble: null,
+        };
 
-      const estadoInicial: EstadoSala = {
-        jugadores: [{
-          id: nuevoJugadorId,
-          nombre: nombre.trim(),
-          planilla: planillaInicial,
-          esHost: true,
-        }],
-        turnoActual: 0,
-        estado: 'esperando',
-        jugadorActivo: null,
-        dadosActuales: [],
-        dadosGuardados: [],
-        tiradasRestantes: 0,
-        primeraTirada: false,
-        ganador: null,
-        generalaDoble: null,
-      };
+        const response = await fetch(`${SUPA_URL}/rest/v1/generala_salas`, {
+          method: 'POST',
+          headers: HEADERS,
+          body: JSON.stringify({
+            codigo: codigoSala,
+            estado_json: estadoInicial,
+            host: nombre.trim(),
+          }),
+        });
 
-      const nuevaSala: Sala = {
-        id: `sala_${Date.now()}`,
-        codigo: codigoSala,
-        estado_json: estadoInicial,
-        host: nombre.trim(),
-      };
+        if (!response.ok) {
+          throw new Error('Error al crear sala');
+        }
 
-      const response = await fetch(`${SUPA_URL}/rest/v1/generala_salas`, {
-        method: 'POST',
-        headers: HEADERS,
-        body: JSON.stringify({
+        const data = await response.json();
+        const nuevaSala: Sala = {
+          id: data[0].id,
           codigo: codigoSala,
           estado_json: estadoInicial,
           host: nombre.trim(),
-        }),
-      });
+        };
+        
+        setSala(nuevaSala);
+        setCodigo(codigoSala);
+        setError('');
 
-      if (!response.ok) {
-        throw new Error('Error al crear sala');
+        // Suscribirse a cambios
+        suscribirCambios(nuevaSala.id);
+      } catch (err: any) {
+        setError(err.message || 'Error al crear sala');
       }
-
-      const data = await response.json();
-      nuevaSala.id = data[0].id;
-      setSala(nuevaSala);
-      setError('');
-
-      // Suscribirse a cambios
-      suscribirCambios(nuevaSala.id);
-    } catch (err: any) {
-      setError(err.message || 'Error al crear sala');
-    }
-  };
+    };
+    crearSalaAuto();
+  }, [nombre]);
 
   const unirseSala = async () => {
-    if (!nombre.trim() || !codigo.trim()) {
-      setError('Completá nombre y código');
+    if (!codigoInput.trim()) {
+      setError('Ingresá el código');
       return;
     }
 
     try {
-      const response = await fetch(`${SUPA_URL}/rest/v1/generala_salas?codigo=eq.${codigo.toUpperCase()}`, {
+      const response = await fetch(`${SUPA_URL}/rest/v1/generala_salas?codigo=eq.${codigoInput.toUpperCase()}`, {
         headers: HEADERS,
       });
 
@@ -856,19 +861,32 @@ export default function GeneralaView({ onBack }: { onBack?: () => void }) {
     };
   }, []);
 
-  if (!sala) {
+  if (fase === 'multijugador') {
     return (
-      <Lobby
-        nombre={nombre}
-        setNombre={setNombre}
-        codigo={codigo}
-        setCodigo={setCodigo}
-        error={error}
-        setError={setError}
-        onCreateSala={crearSala}
-        onUnirseSala={unirseSala}
-      />
+      <div style={styles.fullPage}>
+        <button style={styles.backButton} onClick={onBack}>← Volver</button>
+        <div style={styles.lobbyCard}>
+          <div style={styles.title}>🎲 GENERALA MULTIJUGADOR</div>
+          <div style={styles.subtitle}>Ingresa el código de la sala</div>
+          <input
+            style={styles.input}
+            placeholder="Código (ABCD)"
+            value={codigoInput}
+            onChange={e => { setCodigoInput(e.target.value.toUpperCase()); setError(''); }}
+            maxLength={4}
+            onKeyPress={(e) => e.key === 'Enter' && unirseSala()}
+          />
+          <button style={styles.btnPrimary} onClick={unirseSala}>
+            Unirse
+          </button>
+          {error && <div style={styles.errorMsg}>{error}</div>}
+        </div>
+      </div>
     );
+  }
+
+  if (!sala || !codigo) {
+    return <div style={styles.fullPage}>Cargando generala...</div>;
   }
 
   if (sala.estado_json.estado === 'esperando') {
@@ -897,6 +915,63 @@ export default function GeneralaView({ onBack }: { onBack?: () => void }) {
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 const styles: Record<string, React.CSSProperties> = {
+  fullPage: {
+    position: 'relative',
+    width: '100%',
+    minHeight: '100vh',
+    background: '#0a0a0a',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: "'Courier New', monospace",
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    background: '#111',
+    border: '1px solid #333',
+    borderRadius: 8,
+    padding: '8px 16px',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    zIndex: 1000,
+  },
+  lobbyCard: {
+    position: 'relative',
+    background: '#111',
+    border: '1px solid #222',
+    borderRadius: 16,
+    padding: '36px 28px',
+    width: '90%',
+    maxWidth: 360,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+    zIndex: 10,
+  },
+  btnPrimary: {
+    background: '#FF6B35',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 10,
+    padding: '14px',
+    fontSize: 16,
+    fontWeight: 700,
+    cursor: 'pointer',
+    letterSpacing: 1,
+  },
+  errorMsg: {
+    background: '#3a1a1a',
+    color: '#ff6b6b',
+    borderRadius: 8,
+    padding: '8px 12px',
+    fontSize: 13,
+    textAlign: 'center',
+  },
   container: {
     minHeight: '100vh',
     padding: '20px',

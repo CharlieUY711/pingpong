@@ -5,6 +5,7 @@
  * Modo: 2 o 4 jugadores (mano a mano o en parejas)
  */
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../auth/AuthContext';
 
 // ─── Config Supabase ─────────────────────────────────────────────────────────
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL || 'https://qhnmxvexkizcsmivfuam.supabase.co';
@@ -163,29 +164,31 @@ async function unirSala(id: string, nombre: string): Promise<boolean> {
 
 // ─── Componente principal ────────────────────────────────────────────────────
 export function DominoView({ onBack }: { onBack?: () => void }) {
-  const [fase, setFase] = useState<'lobby' | 'sala'>('lobby');
-  const [nombre, setNombre] = useState('');
+  const { usuario } = useAuth();
+  const [fase, setFase] = useState<'sala' | 'multijugador'>('sala');
+  const nombre = usuario?.nombre || 'Jugador';
   const [codigo, setCodigo] = useState('');
   const [codigoInput, setCodigoInput] = useState('');
   const [sala, setSala] = useState<Sala | null>(null);
   const [error, setError] = useState('');
   const [esHost, setEsHost] = useState(false);
 
-  // ── Crear sala ──────────────────────────────────────────────────────────────
-  const handleCrear = async () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
-    const code = genCode();
-    await crearSala(code, nombre.trim());
-    setCodigo(code);
-    setEsHost(true);
-    setFase('sala');
-  };
+  // ── Crear sala automáticamente ──────────────────────────────────────────────
+  useEffect(() => {
+    const crearSalaAuto = async () => {
+      if (!nombre.trim()) return;
+      const code = genCode();
+      await crearSala(code, nombre);
+      setCodigo(code);
+      setEsHost(true);
+    };
+    crearSalaAuto();
+  }, [nombre]);
 
-  // ── Unirse ──────────────────────────────────────────────────────────────────
+  // ── Unirse a sala multijugador ──────────────────────────────────────────────
   const handleUnirse = async () => {
-    if (!nombre.trim()) { setError('Ingresá tu nombre'); return; }
     if (!codigoInput.trim()) { setError('Ingresá el código'); return; }
-    const ok = await unirSala(codigoInput.toUpperCase(), nombre.trim());
+    const ok = await unirSala(codigoInput.toUpperCase(), nombre);
     if (!ok) { setError('Sala no encontrada o ya empezó'); return; }
     setCodigo(codigoInput.toUpperCase());
     setEsHost(false);
@@ -203,22 +206,31 @@ export function DominoView({ onBack }: { onBack?: () => void }) {
   }, [fase, codigo]);
 
   // ── Render fases ────────────────────────────────────────────────────────────
-  if (fase === 'lobby') {
+  if (fase === 'multijugador') {
     return (
-      <Lobby
-        nombre={nombre}
-        setNombre={setNombre}
-        codigoInput={codigoInput}
-        setCodigoInput={setCodigoInput}
-        error={error}
-        setError={setError}
-        onCrear={handleCrear}
-        onUnirse={handleUnirse}
-      />
+      <div style={styles.fullPage}>
+        <button style={styles.backButton} onClick={onBack}>← Volver</button>
+        <div style={styles.lobbyCard}>
+          <div style={styles.title}>🎴 DOMINÓ MULTIJUGADOR</div>
+          <div style={styles.subtitle}>Ingresa el código de la sala</div>
+          <input
+            style={styles.input}
+            placeholder="Código (ABCD)"
+            value={codigoInput}
+            onChange={e => { setCodigoInput(e.target.value.toUpperCase()); setError(''); }}
+            maxLength={4}
+            onKeyPress={(e) => e.key === 'Enter' && handleUnirse()}
+          />
+          <button style={styles.btnPrimary} onClick={handleUnirse}>
+            Unirse
+          </button>
+          {error && <div style={styles.errorMsg}>{error}</div>}
+        </div>
+      </div>
     );
   }
 
-  if (fase === 'sala' && sala) {
+  if (fase === 'sala' && sala && codigo) {
     return (
       <SalaJuego
         codigo={codigo}
@@ -230,10 +242,14 @@ export function DominoView({ onBack }: { onBack?: () => void }) {
     );
   }
 
+  if (!codigo) {
+    return <div style={styles.fullPage}>Cargando dominó...</div>;
+  }
+
   return <div style={styles.fullPage}>Cargando...</div>;
 }
 
-// ─── Lobby ───────────────────────────────────────────────────────────────────
+// ─── Lobby (ya no se usa, pero se mantiene por compatibilidad) ───────────────────────────────────────────────────────────────────
 function Lobby({ nombre, setNombre, codigoInput, setCodigoInput, error, setError, onCrear, onUnirse }: any) {
   return (
     <div style={styles.fullPage}>
@@ -932,23 +948,38 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     minHeight: '100vh',
     background: '#0a0a0a',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
     fontFamily: "'Courier New', monospace",
-    overflow: 'auto',
-    userSelect: 'none',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    background: '#111',
+    border: '1px solid #333',
+    borderRadius: 8,
+    padding: '8px 16px',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    zIndex: 1000,
   },
   lobbyCard: {
     position: 'relative',
-    background: 'linear-gradient(135deg, #111 0%, #1a1a1a 100%)',
-    border: '2px solid #FF6B35',
+    background: '#111',
+    border: '1px solid #222',
     borderRadius: 16,
     padding: '36px 28px',
     width: '90%',
     maxWidth: 360,
-    margin: '50px auto',
     display: 'flex',
     flexDirection: 'column',
     gap: 14,
-    boxShadow: '0 0 30px rgba(255, 107, 53, 0.3)',
+    zIndex: 10,
   },
   title: {
     fontSize: 48,
@@ -956,11 +987,11 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#FF6B35',
     textAlign: 'center',
     letterSpacing: 8,
-    textShadow: '0 0 20px rgba(255, 107, 53, 0.8)',
+    textShadow: '0 0 40px #FF6B3560',
   },
   subtitle: {
     fontSize: 12,
-    color: '#888',
+    color: '#555',
     textAlign: 'center',
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -969,7 +1000,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   input: {
     background: '#1a1a1a',
-    border: '1px solid #333',
+    border: '1px solid #2a2a2a',
     borderRadius: 10,
     padding: '12px 16px',
     color: '#fff',

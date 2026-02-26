@@ -251,7 +251,6 @@ export function BatallaNavalView({ onBack }: { onBack?: () => void }) {
     return (
       <Lobby
         nombre={nombre}
-        setNombre={setNombre}
         codigoInput={codigoInput}
         setCodigoInput={setCodigoInput}
         error={error}
@@ -290,7 +289,7 @@ function Lobby({ nombre, setNombre, codigoInput, setCodigoInput, error, setError
           style={styles.input}
           placeholder="Tu nombre"
           value={nombre}
-          onChange={e => { setNombre(e.target.value); setError(''); }}
+          onChange={e => { setError(''); }}
           maxLength={12}
         />
 
