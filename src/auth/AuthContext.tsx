@@ -210,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://tu-app.com/auth/callback' // o tu deep link en móvil
+          redirectTo: `${window.location.origin}${window.location.pathname}`
         }
       });
       if (error) throw error;

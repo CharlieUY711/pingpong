@@ -70,6 +70,20 @@ export function LoginView() {
             )}
           </button>
 
+          <div style={styles.separator}>
+            <div style={styles.separatorLine}></div>
+            <span style={styles.separatorText}>o</span>
+            <div style={styles.separatorLine}></div>
+          </div>
+
+          <button
+            style={styles.buttonSecondary}
+            onClick={() => setMostrarEmail(true)}
+            disabled={cargando}
+          >
+            Iniciar sesión con email
+          </button>
+
           <button
             style={styles.linkButton}
             onClick={() => setMostrarRegistro(true)}
@@ -249,6 +263,20 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     cursor: 'pointer',
     transition: 'all 0.3s ease',
+  },
+  buttonSecondary: {
+    width: '100%',
+    maxWidth: 400,
+    height: 56,
+    background: '#1a1a1a',
+    color: '#fff',
+    border: '2px solid #333',
+    borderRadius: 12,
+    fontSize: 18,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    marginBottom: 12,
   },
   buttonPrimary: {
     width: '100%',
